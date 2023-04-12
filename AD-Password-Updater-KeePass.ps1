@@ -4,7 +4,7 @@
 #
 # AUTHOR             :     Louis GAMBART
 # CREATION DATE      :     2023.04.12
-# RELEASE            :     v1.3.0
+# RELEASE            :     v1.3.1
 # USAGE SYNTAX       :     .\AD-Password-Updater-KeePass.ps1
 #
 # SCRIPT DESCRIPTION :     This script updates the passwords of the users in Active Directory and in Keypass
@@ -16,6 +16,7 @@
 # v1.1.0  2023.04.12 - Louis GAMBART - Change keypass secret management using external file
 # v1.2.0  2023.04.12 - Louis GAMBART - Rework of new-password generation using .NET classes
 # v1.3.0  2023.04.12 - Louis GAMBART - Add ShouldProcess to function where PSScriptAnalyzer ask for it
+# v1.3.1  2023.04.12 - Louis GAMBART - Inverse script execution to trigger error first
 #
 #==========================================================================================
 
@@ -417,7 +418,9 @@ trap {
 ###########################
 
 Write-Log "Starting script on $hostname at $(Get-Datetime)" 'Verbose'
-if (Find-Module -ModuleName 'PoShKeePass') {
+if (!(Find-Module -ModuleName 'PoShKeePass')) {
+    Write-Log "The PoShKeePass module is not installed! Please run 'Install-Module -Name PoShKeePass' to install it." 'Error'
+} else {
     try { Import-Module -Name 'PoShKeePass' }
     catch { Write-Log "Unable to import the PoShKeePass module: $_" 'Error' }
     if (!(Find-KeyPass-Configuration -Name $keypassProfileName)) { Write-Log "The KeePass configuration doesn't exist! Please refer to 'New-KeePassDatabaseConfiguration' command to create it." 'Error' }
@@ -438,6 +441,4 @@ if (Find-Module -ModuleName 'PoShKeePass') {
             Update-KeyPass-Entry -EntryName $account.SamAccountName -GroupPath $keypassGroupPath -Password $NewPassword -Force
         }
     }
-} else {
-    Write-Log "The PoShKeePass module is not installed! Please run 'Install-Module -Name PoShKeePass' to install it." 'Error'
 }
